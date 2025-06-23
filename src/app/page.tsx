@@ -1,3 +1,5 @@
+import { ModeToggle } from "@/components/ModeToggle";
+import { Button } from "@/components/ui/button";
 import {
   SignedIn,
   SignedOut,
@@ -9,15 +11,18 @@ import Image from "next/image";
 
 export default function Home() {
   return (
-    <div>
+    <div className="m-4">
       <SignedOut>
-         <SignInButton>
-          <button className="bg-gradient-to-l from-red-500 via-purple-400 hover:bg-gradient-to-r text-white font-bold py-2 px-4 rounded">Sign In</button>
+         <SignInButton mode="modal">
+          <Button >Sign In</Button>
           </SignInButton>
       </SignedOut>
       <SignedIn>
         <UserButton />
       </SignedIn>
+
+      <Button variant={"secondary"}>Click Me!</Button>
+      <ModeToggle />
     </div>
   );
 } 
