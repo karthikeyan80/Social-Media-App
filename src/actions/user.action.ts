@@ -1,4 +1,7 @@
-import { currentUser } from "@clerk/nextjs/server";
+"use server";
+
+import { prisma } from "@/lib/prisma";
+import { auth, currentUser } from "@clerk/nextjs/server";
 
 /**
  * Synchronizes the current user's data with the application's database
@@ -6,31 +9,32 @@ import { currentUser } from "@clerk/nextjs/server";
  */
 export async function syncUser() {
   try {
+    const {userId} = await auth();
     const user = await currentUser();
 
-    if (!user) {
-      throw new Error("User not found");
+    if (!user || !userId) {
+      return;
     }
 
-    // Here you would typically:
-    // 1. Check if the user exists in your database
-    // 2. Create the user if they don't exist
-    // 3. Update the user's information if needed
+    // Check if the user already exists in the database
+    const existingUser = await prisma.user.findUnique({
+      where: { clerkId: userId },
+    });
 
-    // For now, we'll just log the action since the database integration isn't set up
-    console.log(`Syncing user: ${user.id}`);
+    if (existingUser) return existingUser;
 
-    return {
-      success: true,
-      message: "User synchronized successfully",
-      userId: user.id,
-    };
+
+    const dbUser = await prisma.user.create({
+      data: {
+        clerkId : userId,
+        name : `${user.firstName || ""}  ${user.lastName || ""}`,
+        username: user.username ?? user.emailAddresses[0]?.emailAddress.split("@")[0] ,
+        email : user.emailAddresses[0].emailAddress,
+        image : user.imageUrl,
+      }})
+
+      return dbUser;
   } catch (error) {
-    console.error("Error syncing user:", error);
-    return {
-      success: false,
-      message: "Failed to synchronize user",
-      error: error instanceof Error ? error.message : String(error),
-    };
+   
   }
 }
