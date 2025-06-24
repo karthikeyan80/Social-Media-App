@@ -1,4 +1,4 @@
-import { ModeToggle } from "@/components/ModeToggle";
+
 import { Button } from "@/components/ui/button";
 import {
   SignedIn,
@@ -11,18 +11,8 @@ import Image from "next/image";
 
 export default function Home() {
   return (
-    <div className="m-4">
-      <SignedOut>
-         <SignInButton mode="modal">
-          <Button >Sign In</Button>
-          </SignInButton>
-      </SignedOut>
-      <SignedIn>
-        <UserButton />
-      </SignedIn>
-
-      <Button variant={"secondary"}>Click Me!</Button>
-      <ModeToggle />
+    <div className="m-4 flex justify-center">
+     <h1>Home Page Content Here!</h1>
     </div>
   );
 } 
