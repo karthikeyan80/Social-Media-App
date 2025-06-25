@@ -4,6 +4,7 @@ import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Navbar from "@/components/Navbar";
+import Sidebar from "@/components/Sidebar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,12 +35,16 @@ export default function RootLayout({
           <ThemeProvider attribute="class" defaultTheme="system">
             <div className="min-h-screen">
               <Navbar />
-              <main className="py-8">
+              <main className="py-6">
                 {/*container to center content */}
-                <div className="max-w-7xl mx-auto px-4">
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="hidden lg:block lg:col-span-3">sidebar</div>
-                    <div className="lg:col-span-9">{children}</div>
+                <div className="max-w-6xl mx-auto px-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
+                    {/* Sidebar - 1/4 width on desktop */}
+                    <div className="hidden lg:block lg:col-span-1">
+                      <Sidebar />
+                    </div>
+                    {/* Main content - 3/4 width on desktop */}
+                    <div className="lg:col-span-3">{children}</div>
                   </div>
                 </div>
               </main>
