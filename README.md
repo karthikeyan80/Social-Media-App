@@ -31,12 +31,12 @@ A modern full-stack application built with the latest technologies to deliver hi
 ```bash
 git clone <your-repo-url>
 cd <your-project-folder>
-
+```
 
 ### 2. Install Dependencies 
 ```bash
 npm install
-
+```
 
 ### 3. Configure Environment Variables
 
@@ -46,7 +46,7 @@ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
 CLERK_SECRET_KEY=your_clerk_secret_key
 DATABASE_URL=your_postgres_connection_url
 UPLOADTHING_TOKEN=your_uploadthing_token
-
+```
 
 ### 4.  Run the Development Server
 ```bash
