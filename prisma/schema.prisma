@@ -14,112 +14,110 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  username      String @unique
-  clerkId String   @unique
-  name      String?
-  image     String?
-  bio       String?
-  website   String?
+  id String @id @default(cuid())
+  email String @unique
+  username String @unique
+  clerkId String @unique
+  name String?
+  bio String?
+  image String?
   location String?
-  createdAt DateTime @default(now())
+  website String?
+  createdAt DateTime @default(now()) // member since 2020
   updatedAt DateTime @updatedAt
 
+  // Relations: 
+  posts Post[] // One-to-many
+  comments Comment[] // One-to-many
+  likes Like[] // One-to-many
 
-// Relationships
-posts Post[]
-comments Comment[]
-likes Like[]
+  followers Follows[] @relation("following") // users who follow this user
+  following Follows[] @relation("follower") // users this user follows
 
-followers Follows[] @relation("followers") //user who is being followed
-following Follows[] @relation("following") //user who is following
-
-notifications Notification[] @relation("userNotifications") // notifications received by the user
-NotificationsCreated Notification[] @relation("NotificationsCreator") // notifications sent by the user
+  notifications Notification[] @relation("userNotifications") // notifications received by a user
+  notificationsCreated Notification[] @relation("notificationCreator") // notifications triggered by a user
 }
 
-model Post {
-  id        String   @id @default(cuid())
-  authorId  String
-  content   String?
-  image     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
+model Post{
+  id        String    @id @default(cuid())
+  authorId String
+  content String?
+  image String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
-  // Relationships
-  author    User     @relation(fields: [authorId], references: [id] , onDelete: Cascade)  // ondelete: Cascade ensures that if a author is deleted, their posts are also deleted
-  comments  Comment[]
-  likes     Like[]
-  notifications Notification[] 
+  // Relations
+  author User @relation(fields: [authorId],references: [id], onDelete: Cascade) // cascade delete means delete all posts if author is deleted
+  comments Comment[]
+  likes Like[]
+  notifications Notification[]
 }
 
-model Comment {
-  id        String   @id @default(cuid())
-  postId    String
-  authorId  String
-  content   String
+
+model Comment{
+  id String @id @default(cuid())
+  content String
+  authorId String
+  postId String
   createdAt DateTime @default(now())
 
-  // Relationships
-  post     Post     @relation(fields: [postId], references: [id] , onDelete: Cascade)
-  author   User     @relation(fields: [authorId], references: [id] , onDelete: Cascade)
-  comments Notification[] // notifications related to this comment
+  // Relations
+  author User @relation(fields: [authorId],references: [id],onDelete: Cascade)
+  post Post @relation(fields: [postId],references: [id], onDelete: Cascade)
+  notifications Notification[]
 
-  @@index([authorId, postId]) // composite index for faster lookups
-
+  @@index([authorId,postId]) // composite index for faster queries
 }
 
 model Like {
   id        String   @id @default(cuid())
-  postId    String
-  userId  String
+  postId    String                 
+  userId    String                 
   createdAt DateTime @default(now())
 
-  // Relationships
-  post     Post     @relation(fields: [postId], references: [id] , onDelete: Cascade)
-  user   User     @relation(fields: [userId], references: [id] , onDelete: Cascade)
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
 
-  @@unique([postId, userId]) // ensure a user can like a post only once
-@@index([userId, postId]) // index for faster lookups
-
+  @@index([userId,postId]) // composite index for faster queries
+  @@unique([userId,postId]) // this prevents same user liking post twice
 }
 
 model Follows{
-  folllowerId String
+  followerId String
   followingId String
   createdAt DateTime @default(now())
 
-  // Relationships
-  follower User @relation("followers", fields: [folllowerId], references: [id], onDelete: Cascade)
-  following User @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+  // Relations
+  follower    User     @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
 
-  @@index([folllowerId, followingId]) // composite index for faster lookups 
-  @@id([folllowerId, followingId]) //  ensure a user can follow another user only once
+  @@index([followerId,followingId]) // composite index for faster queries
+  @@id([followerId, followingId]) // composite primary key prevents duplicate follows
 }
 
 model Notification {
   id        String   @id @default(cuid())
-  userId    String
-  type      NotificationType         // type of notification (e.g., like, comment, follow)
-  creatorId String                   // user who created the notification (e.g., the user who liked/commented/followed)
-  postId    String?                  // related post, if applicable
-  commentId String?                  // related comment, if applicable
+  userId    String                  
+  creatorId String                  
+  type      NotificationType        
+  read      Boolean  @default(false)
+  postId    String?                 
+  commentId String?                
   createdAt DateTime @default(now())
-  read      Boolean @default(false) // whether the notification has been read
+  
+  // Relations
+  user      User     @relation("userNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  creator   User     @relation("notificationCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  post      Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
 
-  // Relationships
-  user     User     @relation("userNotifications", fields: [userId], references: [id], onDelete: Cascade)
-  creator  User     @relation("NotificationsCreator", fields: [creatorId], references: [id], onDelete: Cascade)
-  post     Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
-  comment  Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
-
-  @@index([userId, createdAt]) // index for faster lookups
+  @@index([userId, createdAt])
 }
 
 enum NotificationType {
-  LIKE
-  COMMENT
-  FOLLOW
+  LIKE     
+  COMMENT 
+  FOLLOW   
 }

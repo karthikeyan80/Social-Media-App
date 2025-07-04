@@ -1,45 +1,51 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 
-/**
- * Synchronizes the current user's data with the application's database
- * This function is called when a user logs in or when their data needs to be updated
- */
 export async function syncUser() {
   try {
-    const {userId} = await auth();
+    const { userId } = await auth();
     const user = await currentUser();
 
-    if (!user || !userId) {
-      return;
-    }
+    if (!userId || !user) return null;
 
-    // Check if the user already exists in the database
     const existingUser = await prisma.user.findUnique({
-      where: { clerkId: userId },
+      where: {
+        clerkId: userId,
+      },
+      include: {
+        _count: {
+          select: {
+            followers: true,
+            following: true,
+            posts: true,
+          },
+        },
+      },
     });
 
     if (existingUser) return existingUser;
 
-
     const dbUser = await prisma.user.create({
       data: {
-        clerkId : userId,
-        name : `${user.firstName || ""}  ${user.lastName || ""}`,
-        username: user.username ?? user.emailAddresses[0]?.emailAddress.split("@")[0] ,
-        email : user.emailAddresses[0].emailAddress,
-        image : user.imageUrl,
-      }})
+        clerkId: userId,
+        name: `${user.firstName || ""} ${user.lastName || ""}`,
+        username:
+          user.username ?? user.emailAddresses[0].emailAddress.split("@")[0],
+        email: user.emailAddresses[0].emailAddress,
+        image: user.imageUrl,
+      },
+    });
 
-      return dbUser;
+    // Fetch the user again with _count included
+    return getUserByClerkId(userId);
   } catch (error) {
-   
+    console.log("Error in syncUser", error);
+    return null; // Explicitly return null instead of undefined
   }
 }
-
 
 export async function getUserByClerkId(clerkId: string) {
   return prisma.user.findUnique({
@@ -62,9 +68,13 @@ export async function getDbUserId() {
   const { userId: clerkId } = await auth();
   if (!clerkId) return null;
 
-  const user = await getUserByClerkId(clerkId);
+  let user = await getUserByClerkId(clerkId);
 
-  if (!user) throw new Error("User not found");
+  // 🟡 Create user if not found
+  if (!user) {
+    user = await syncUser();
+    if (!user) throw new Error("Failed to create user");
+  }
 
   return user.id;
 }
@@ -84,7 +94,7 @@ export async function getRandomUsers() {
             NOT: {
               followers: {
                 some: {
-                  folllowerId: userId,
+                  followerId: userId,
                 },
               },
             },
@@ -122,19 +132,19 @@ export async function toggleFollow(targetUserId: string) {
 
     const existingFollow = await prisma.follows.findUnique({
       where: {
-        folllowerId_followingId: {
-          folllowerId: userId,
+        followerId_followingId: {
+          followerId: userId,
           followingId: targetUserId,
         },
       },
     });
- 
+
     if (existingFollow) {
       // unfollow
       await prisma.follows.delete({
         where: {
-          folllowerId_followingId: {
-            folllowerId: userId,
+          followerId_followingId: {
+            followerId: userId,
             followingId: targetUserId,
           },
         },
@@ -144,7 +154,7 @@ export async function toggleFollow(targetUserId: string) {
       await prisma.$transaction([
         prisma.follows.create({
           data: {
-            folllowerId: userId,
+            followerId: userId,
             followingId: targetUserId,
           },
         }),
